@@ -1,8 +1,11 @@
 .DS_Store
-node_modules
-.expo
-dist
-build
+node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
 .env
-__pycache__
+.venv/
+venv/
+__pycache__/
 *.pyc
