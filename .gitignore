@@ -9,3 +9,8 @@ build/
 venv/
 __pycache__/
 *.pyc
+runs/
+experiments/
+*.pt
+*.pth
+*.onnx
