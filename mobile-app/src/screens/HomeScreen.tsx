@@ -2,7 +2,7 @@
 import React from 'react';
 
 // Diese Zeile importiert die benötigten Bausteine aus React Native.
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 // Diese Zeile importiert die Safe-Area-Ansicht.
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,11 +79,21 @@ export function HomeScreen({ navigation }: HomeScreenProperties): React.JSX.Elem
     <SafeAreaView style={styles.safeArea}>
       {/* Diese Zeile gruppiert den gesamten sichtbaren Inhalt. */}
       <View style={styles.contentContainer}>
-        {/* Diese Zeile zeigt den Namen der Anwendung an. */}
-        <Text style={styles.applicationName}>{applicationMetadata.applicationName}</Text>
+        {/* Diese Zeile rendert den Logo-Bereich über der Überschrift. */}
+        <View style={styles.logoContainer}>
+          {/* Diese Zeile zeigt das lokale Logo-Bild an. */}
+          <Image
+            // Diese Zeile lädt das Logo aus dem assets-Ordner.
+            source={require('../../assets/images/traffic-sign-logo.png')}
+            // Diese Zeile verwendet den Stil für das Logo.
+            style={styles.logoImage}
+            // Diese Zeile sorgt dafür, dass das Bild nicht verzerrt wird.
+            resizeMode="contain"
+          />
+        </View>
 
         {/* Diese Zeile zeigt die Hauptüberschrift des Bildschirms an. */}
-        <Text style={styles.screenTitle}>Home Screen</Text>
+        <Text style={styles.screenTitle}>{applicationMetadata.applicationName}</Text>
 
         {/* Diese Zeile rendert den Button für die Kameraaufnahme. */}
         <ScreenActionButton
@@ -129,6 +139,7 @@ const styles = StyleSheet.create({
     // Diese Zeile lässt die Fläche den ganzen Bildschirm füllen.
     flex: 1
   },
+
   // Diese Regel gestaltet den inneren Hauptcontainer des Bildschirms.
   contentContainer: {
     // Diese Zeile lässt den Container den verfügbaren Platz ausfüllen.
@@ -138,19 +149,23 @@ const styles = StyleSheet.create({
     // Diese Zeile erzeugt horizontalen Abstand.
     paddingHorizontal: layoutValues.extraLarge
   },
-  // Diese Regel gestaltet die kleine Projektbezeichnung.
-  applicationName: {
-    // Diese Zeile setzt die Schriftgröße.
-    fontSize: 16,
-    // Diese Zeile macht den Text halb fett.
-    fontWeight: '600',
-    // Diese Zeile setzt die weichere Textfarbe.
-    color: colorPalette.textSecondary,
-    // Diese Zeile richtet den Text mittig aus.
-    textAlign: 'center',
-    // Diese Zeile erzeugt Abstand nach unten.
-    marginBottom: layoutValues.small
+
+  // Diese Regel gestaltet den äußeren Logo-Bereich.
+  logoContainer: {
+    // Diese Zeile richtet den Inhalt mittig aus.
+    alignItems: 'center',
+    // Diese Zeile erzeugt Abstand unterhalb des Logos.
+    marginBottom: layoutValues.large
   },
+
+  // Diese Regel gestaltet das Bildlogo.
+  logoImage: {
+    // Diese Zeile setzt die Breite des Logos.
+    width: 140,
+    // Diese Zeile setzt die Höhe des Logos.
+    height: 140
+  },
+
   // Diese Regel gestaltet die Hauptüberschrift.
   screenTitle: {
     // Diese Zeile setzt eine große Schriftgröße.
