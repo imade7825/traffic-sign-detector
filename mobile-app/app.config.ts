@@ -54,7 +54,7 @@ const applicationConfiguration: ExpoConfig = {
   // Diese Zeile speichert zusätzliche Werte für die Anwendung.
   extra: {
     // Diese Zeile speichert die Standardadresse des Backends für den Android-Emulator.
-    backendBaseUrl: 'http://10.0.2.2:8000'
+    backendBaseUrl: 'http://192.168.178.37:8000'
   }
 };
 

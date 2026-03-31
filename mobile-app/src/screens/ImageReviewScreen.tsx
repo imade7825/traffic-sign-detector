@@ -1,82 +1,109 @@
 // Diese Zeile importiert React, damit wir eine Funktionskomponente schreiben können.
-import React from 'react';
+import React from "react";
 
 // Diese Zeile importiert die benötigten Bausteine aus React Native.
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 // Diese Zeile importiert die Safe-Area-Ansicht.
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Diese Zeile importiert den wiederverwendbaren Aktionsbutton.
-import { ScreenActionButton } from '../components/ScreenActionButton';
+import { ScreenActionButton } from "../components/ScreenActionButton";
 
 // Diese Zeile importiert die zoombare Bildkomponente.
-import { ZoomableImagePreview } from '../components/ZoomableImagePreview';
+import { ZoomableImagePreview } from "../components/ZoomableImagePreview";
 
 // Diese Zeile importiert die Farbpalette der Anwendung.
-import { colorPalette } from '../constants/colorPalette';
+import { colorPalette } from "../constants/colorPalette";
 
 // Diese Zeile importiert die wiederverwendbaren Abstände und Größen.
-import { layoutValues } from '../constants/layoutValues';
+import { layoutValues } from "../constants/layoutValues";
+
+// Diese Zeile importiert den Detection-Service der App.
+import { analyzeImageWithBackend } from "../services/detectionService";
 
 // Diese Zeile importiert die typisierten Eigenschaften des Bildprüfungsbildschirms.
-import type {
-  ImageReviewScreenProperties,
-  TrafficSignDetectionPreview
-} from '../types/applicationNavigation';
-
+import type { ImageReviewScreenProperties } from "../types/applicationNavigation";
 
 // Diese Funktion rendert den Bildprüfungsbildschirm.
-export function ImageReviewScreen({ navigation, route }: ImageReviewScreenProperties): React.JSX.Element {
+export function ImageReviewScreen({
+  navigation,
+  route,
+}: ImageReviewScreenProperties): React.JSX.Element {
   // Diese Zeile liest die Bildadresse sicher aus den Navigationsparametern.
   const selectedImageUri = route.params?.imageUri;
 
   // Diese Zeile prüft, ob eine nutzbare Bildadresse vorhanden ist.
-  const hasSelectedImage = typeof selectedImageUri === 'string' && selectedImageUri.length > 0;
+  const hasSelectedImage =
+    typeof selectedImageUri === "string" && selectedImageUri.length > 0;
 
-  // Diese Funktion reagiert auf den Analyse-Button.
-  function handleAnalyzeImage(): void {
-    // Diese Zeile prüft, ob ein Bild für die Analyse vorhanden ist.
-    if (!selectedImageUri) {
-      // Diese Zeile zeigt einen klaren Hinweis bei fehlendem Bild an.
-      Alert.alert('Missing image', 'No image selected.');
+  // Diese Zeile speichert den aktuellen Loading-Zustand der Analyse.
+  const [isAnalyzingImage, setIsAnalyzingImage] = React.useState(false);
 
-      // Diese Zeile beendet die Funktion ohne Navigation.
+  // Diese Funktion startet die Bildanalyse über das Backend.
+  async function handleAnalyzeImage(): Promise<void> {
+    // Diese Zeile verhindert doppelte Analyseaufrufe während des Ladens.
+    if (isAnalyzingImage) {
+      // Diese Zeile beendet die Funktion sofort.
       return;
     }
 
-    // Diese Zeile erstellt eine Liste mit vorläufigen Beispielerkennungen.
-    const sampleTrafficSignDetections: TrafficSignDetectionPreview[] = [
-      // Diese Zeile definiert die erste Beispielerkennung.
-      {
-        // Diese Zeile setzt die Kennung der Erkennung.
-        id: 'sample-detection-1',
-        // Diese Zeile setzt das technische Label.
-        label: 'stop',
-        // Diese Zeile setzt die Beispielwahrscheinlichkeit.
-        confidence: 0.94,
-        // Diese Zeile setzt die verständliche Bedeutung.
-        meaning: 'Must stop'
-      }
-    ];
+    // Diese Zeile prüft, ob ein Bild vorhanden ist.
+    if (!selectedImageUri) {
+      // Diese Zeile zeigt einen Hinweis bei fehlendem Bild an.
+      Alert.alert("Missing image", "No image selected.");
 
-    // Diese Zeile navigiert mit Platzhalterdaten zum Ergebnisbildschirm.
-    navigation.navigate('DetectionResultScreen', {
-      // Diese Zeile übergibt die Bildadresse.
-      imageUri: selectedImageUri,
-      // Diese Zeile übergibt eine vorläufige Bildbreite.
-      sourceImageWidth: 1000,
-      // Diese Zeile übergibt eine vorläufige Bildhöhe.
-      sourceImageHeight: 1000,
-      // Diese Zeile übergibt die vorläufigen Beispielerkennungen.
-      detections: sampleTrafficSignDetections
-    });
+      // Diese Zeile beendet die Funktion ohne Analyse.
+      return;
+    }
+
+    // Diese Zeile setzt den Loading-Zustand auf aktiv.
+    setIsAnalyzingImage(true);
+
+    // Diese Zeile startet einen Fehler-sicheren Analyseblock.
+    try {
+      // Diese Zeile ruft die Backend-Analyse auf.
+      const detectionResponse = await analyzeImageWithBackend(selectedImageUri);
+
+      // Diese Zeile navigiert mit den echten Backend-Daten zum Ergebnisbildschirm.
+      navigation.navigate("DetectionResultScreen", {
+        imageUri: selectedImageUri,
+        sourceImageWidth: detectionResponse.sourceImageWidth,
+        sourceImageHeight: detectionResponse.sourceImageHeight,
+        detections: detectionResponse.detections,
+      });
+    } catch (error) {
+      // Diese Zeile schreibt den echten Fehler in die Konsole.
+      console.error("Detection error:", error);
+
+      // Diese Zeile zeigt weiterhin den geforderten Alerttext an.
+      Alert.alert(
+        "Analysis failed",
+        "Image analysis failed. Please try again."
+      );
+    } finally {
+      // Diese Zeile beendet den Loading-Zustand immer.
+      setIsAnalyzingImage(false);
+    }
   }
 
   // Diese Funktion bringt den Benutzer zurück zum Startbildschirm.
   function handleChooseAnotherImage(): void {
+    // Diese Zeile prüft, ob gerade eine Analyse läuft.
+    if (isAnalyzingImage) {
+      // Diese Zeile beendet die Funktion während des Loadings.
+      return;
+    }
+
     // Diese Zeile navigiert zurück zum Startbildschirm.
-    navigation.navigate('HomeScreen');
+    navigation.navigate("HomeScreen");
   }
 
   // Diese Zeile gibt die gesamte Benutzeroberfläche des Bildprüfungsbildschirms zurück.
@@ -106,18 +133,38 @@ export function ImageReviewScreen({ navigation, route }: ImageReviewScreenProper
             </>
           ) : (
             <>
-              {/* Diese Zeile zeigt die geforderte Fallback-Nachricht an. */}
+              {/* Diese Zeile zeigt die Fallback-Nachricht an. */}
               <Text style={styles.fallbackText}>No image selected.</Text>
             </>
           )}
         </View>
 
+        {/* Diese Zeile prüft, ob gerade analysiert wird. */}
+        {isAnalyzingImage ? (
+          <>
+            {/* Diese Zeile rendert den Ladebereich. */}
+            <View style={styles.loadingContainer}>
+              {/* Diese Zeile zeigt den Ladeindikator an. */}
+              <ActivityIndicator
+                size="large"
+                color={colorPalette.accentPrimary}
+              />
+
+              {/* Diese Zeile zeigt einen Ladehinweis an. */}
+              <Text style={styles.loadingText}>Analyzing image...</Text>
+            </View>
+          </>
+        ) : null}
+
         {/* Diese Zeile rendert den Button zum Starten der Analyse. */}
         <ScreenActionButton
           // Diese Zeile setzt den sichtbaren Text des Buttons.
-          title="Analyze Image"
+          title={isAnalyzingImage ? "Analyzing Image..." : "Analyze Image"}
           // Diese Zeile verbindet den Button mit der Analysefunktion.
-          onPress={handleAnalyzeImage}
+          onPress={() => {
+            // Diese Zeile startet die asynchrone Analyse ohne Rückgabewert im UI-Kontext.
+            void handleAnalyzeImage();
+          }}
         />
 
         {/* Diese Zeile rendert den Button zum erneuten Auswählen eines Bildes. */}
@@ -132,7 +179,6 @@ export function ImageReviewScreen({ navigation, route }: ImageReviewScreenProper
   );
 }
 
-
 // Diese Konstante enthält alle Styles des Bildschirms.
 const styles = StyleSheet.create({
   // Diese Regel gestaltet die sichere äußere Fläche des Bildschirms.
@@ -140,7 +186,7 @@ const styles = StyleSheet.create({
     // Diese Zeile setzt die Haupt-Hintergrundfarbe.
     backgroundColor: colorPalette.backgroundPrimary,
     // Diese Zeile lässt die Fläche den ganzen Bildschirm füllen.
-    flex: 1
+    flex: 1,
   },
 
   // Diese Regel gestaltet den inneren Abstand des scrollbaren Inhalts.
@@ -150,7 +196,7 @@ const styles = StyleSheet.create({
     // Diese Zeile erzeugt horizontalen Abstand.
     paddingHorizontal: layoutValues.large,
     // Diese Zeile erzeugt unteren Abstand.
-    paddingBottom: layoutValues.extraLarge
+    paddingBottom: layoutValues.extraLarge,
   },
 
   // Diese Regel gestaltet den oberen Einführungsbereich.
@@ -166,7 +212,7 @@ const styles = StyleSheet.create({
     // Diese Zeile zeichnet einen feinen Rand.
     borderWidth: 1,
     // Diese Zeile setzt die Randfarbe.
-    borderColor: colorPalette.borderPrimary
+    borderColor: colorPalette.borderPrimary,
   },
 
   // Diese Regel gestaltet die Hauptüberschrift.
@@ -174,11 +220,11 @@ const styles = StyleSheet.create({
     // Diese Zeile setzt eine große Schriftgröße.
     fontSize: 28,
     // Diese Zeile macht die Überschrift deutlich fett.
-    fontWeight: '700',
+    fontWeight: "700",
     // Diese Zeile setzt die Haupttextfarbe.
     color: colorPalette.textPrimary,
     // Diese Zeile erzeugt Abstand nach unten.
-    marginBottom: layoutValues.small
+    marginBottom: layoutValues.small,
   },
 
   // Diese Regel gestaltet die erklärende Beschreibung.
@@ -188,7 +234,7 @@ const styles = StyleSheet.create({
     // Diese Zeile setzt die weichere Textfarbe.
     color: colorPalette.textSecondary,
     // Diese Zeile erhöht die Lesbarkeit durch mehr Zeilenhöhe.
-    lineHeight: 24
+    lineHeight: 24,
   },
 
   // Diese Regel gestaltet den äußeren Container der Bildvorschau.
@@ -208,11 +254,11 @@ const styles = StyleSheet.create({
     // Diese Zeile legt eine feste Höhe für die Vorschau fest.
     height: 320,
     // Diese Zeile richtet den Inhalt vertikal mittig aus.
-    justifyContent: 'center',
+    justifyContent: "center",
     // Diese Zeile richtet den Inhalt horizontal mittig aus.
-    alignItems: 'center',
+    alignItems: "center",
     // Diese Zeile schneidet vergrößerte Bildbereiche sauber am Container ab.
-    overflow: 'hidden'
+    overflow: "hidden",
   },
 
   // Diese Regel gestaltet den Fallback-Text bei fehlendem Bild.
@@ -220,10 +266,28 @@ const styles = StyleSheet.create({
     // Diese Zeile setzt die Schriftgröße des Textes.
     fontSize: 18,
     // Diese Zeile macht den Text gut lesbar.
-    fontWeight: '600',
+    fontWeight: "600",
     // Diese Zeile setzt die weichere Textfarbe.
     color: colorPalette.textSecondary,
     // Diese Zeile richtet den Text mittig aus.
-    textAlign: 'center'
-  }
+    textAlign: "center",
+  },
+
+  // Diese Regel gestaltet den Ladebereich.
+  loadingContainer: {
+    // Diese Zeile richtet den Inhalt mittig aus.
+    alignItems: "center",
+    // Diese Zeile erzeugt Abstand nach unten.
+    marginBottom: layoutValues.large,
+  },
+
+  // Diese Regel gestaltet den Ladetext.
+  loadingText: {
+    // Diese Zeile setzt die Schriftgröße.
+    fontSize: 16,
+    // Diese Zeile setzt die weichere Textfarbe.
+    color: colorPalette.textSecondary,
+    // Diese Zeile erzeugt Abstand oberhalb.
+    marginTop: layoutValues.small,
+  },
 });
