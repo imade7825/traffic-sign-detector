@@ -65,7 +65,7 @@ function createImageMimeType(imageFileName: string): string {
 }
 
 
-// Diese Funktion lädt im Web-Fall das Bild zuerst als Blob und danach als multipart form-data hoch.
+// Diese Funktion lädt ein Bild im nativen Fall als multipart form-data hoch.
 export async function analyzeImageWithBackend(imageUri: string): Promise<DetectionApiResponse> {
   // Diese Zeile liest die Basisadresse des Backends.
   const backendBaseUrl = readBackendBaseUrl();
@@ -76,29 +76,21 @@ export async function analyzeImageWithBackend(imageUri: string): Promise<Detecti
   // Diese Zeile bestimmt den passenden MIME-Type.
   const imageMimeType = createImageMimeType(imageFileName);
 
-  // Diese Zeile lädt die lokale Web-Bildquelle als Response.
-  const imageResponse = await fetch(imageUri);
-
-  // Diese Zeile prüft, ob die Bildquelle erfolgreich geladen wurde.
-  if (!imageResponse.ok) {
-    // Diese Zeile wirft einen Fehler bei nicht lesbarer Web-Bildquelle.
-    throw new Error(`Could not read image from URI: ${imageUri}`);
-  }
-
-  // Diese Zeile wandelt die Web-Bildquelle in ein Blob um.
-  const imageBlob = await imageResponse.blob();
-
   // Diese Zeile erstellt das FormData-Objekt für den Upload.
   const multipartFormData = new FormData();
 
-  // Diese Zeile erstellt eine echte Web-File aus dem Blob.
-  const imageFile = new File([imageBlob], imageFileName, {
-    // Diese Zeile setzt den MIME-Type der Datei.
+  // Diese Zeile definiert die hochzuladende Datei für React Native.
+  const imageFile = {
+    // Diese Zeile setzt die Bildadresse.
+    uri: imageUri,
+    // Diese Zeile setzt den Dateinamen.
+    name: imageFileName,
+    // Diese Zeile setzt den MIME-Type.
     type: imageMimeType
-  });
+  };
 
   // Diese Zeile hängt die Datei an das multipart-Formular an.
-  multipartFormData.append('file', imageFile);
+  multipartFormData.append('file', imageFile as never);
 
   // Diese Zeile sendet die POST-Anfrage an den Detection-Endpunkt.
   const response = await fetch(`${backendBaseUrl}/detect`, {
