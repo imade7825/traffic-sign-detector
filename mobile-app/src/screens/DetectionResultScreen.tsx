@@ -2,22 +2,28 @@
 import React from 'react';
 
 // Diese Zeile importiert benötigte Bausteine aus React Native.
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 // Diese Zeile importiert die Safe-Area-Ansicht.
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Diese Zeile importiert die wiederverwendbare Informationskarte.
-import { InformationCard } from '../components/InformationCard';
+// Diese Zeile importiert die Ergebnis-Karte.
+import { DetectionResultCard } from '../components/DetectionResultCard';
 
-// Diese Zeile importiert den wiederverwendbaren Aktionsbutton.
-import { ScreenActionButton } from '../components/ScreenActionButton';
+// Diese Zeile importiert die plattformabhängige zoombare Detection-Ansicht.
+import { ZoomableDetectionCanvas } from '../components/ZoomableDetectionCanvas';
 
 // Diese Zeile importiert die Farbpalette der Anwendung.
 import { colorPalette } from '../constants/colorPalette';
 
+// Diese Zeile importiert die lokale Verkehrszeicheninformation.
+import { readTrafficSignMeaning } from '../constants/trafficSignInformation';
+
 // Diese Zeile importiert die wiederverwendbaren Abstände und Größen.
 import { layoutValues } from '../constants/layoutValues';
+
+// Diese Zeile importiert den wiederverwendbaren Aktionsbutton.
+import { ScreenActionButton } from '../components/ScreenActionButton';
 
 // Diese Zeile importiert die typisierten Eigenschaften des Ergebnisbildschirms.
 import type { DetectionResultScreenProperties } from '../types/applicationNavigation';
@@ -53,56 +59,61 @@ export function DetectionResultScreen({ navigation, route }: DetectionResultScre
 
           {/* Diese Zeile beschreibt den Bildschirm kurz. */}
           <Text style={styles.screenDescription}>
-            The backend analysis result is shown on this screen.
+            The analyzed image, bounding boxes and detected traffic signs are shown here.
           </Text>
         </View>
 
-        {/* Diese Zeile rendert den Bildbereich. */}
+        {/* Diese Zeile rendert den Bildbereich mit gemeinsamem Zoom und Verschieben. */}
         <View style={styles.imagePreviewContainer}>
-          {/* Diese Zeile zeigt das analysierte Bild an. */}
-          <Image
-            // Diese Zeile setzt die Bildquelle.
-            source={{ uri: imageUri }}
-            // Diese Zeile setzt den Stil des Bildes.
-            style={styles.imagePreview}
-            // Diese Zeile sorgt dafür, dass das Bild nicht verzerrt wird.
-            resizeMode="contain"
+          {/* Diese Zeile rendert die plattformabhängige Canvas-Komponente. */}
+          <ZoomableDetectionCanvas
+            // Diese Zeile übergibt die Bildadresse.
+            imageUri={imageUri}
+            // Diese Zeile übergibt die Erkennungen.
+            detections={detections}
+            // Diese Zeile übergibt die Breite des Ursprungsbildes.
+            sourceImageWidth={sourceImageWidth}
+            // Diese Zeile übergibt die Höhe des Ursprungsbildes.
+            sourceImageHeight={sourceImageHeight}
           />
         </View>
 
         {/* Diese Zeile zeigt die Ursprungsgröße des Bildes an. */}
-        <InformationCard
-          // Diese Zeile setzt den Titel der Karte.
-          title="Source image size"
-          // Diese Zeile setzt die Beschreibung der Karte.
-          description={`${sourceImageWidth} x ${sourceImageHeight}`}
-        />
+        <View style={styles.imageMetaCard}>
+          {/* Diese Zeile zeigt den Metatitel an. */}
+          <Text style={styles.imageMetaTitle}>Source image size</Text>
+
+          {/* Diese Zeile zeigt die Bildmaße an. */}
+          <Text style={styles.imageMetaValue}>
+            {sourceImageWidth} x {sourceImageHeight}
+          </Text>
+        </View>
 
         {/* Diese Zeile prüft, ob keine Erkennungen vorhanden sind. */}
         {detections.length === 0 ? (
           <>
-            {/* Diese Zeile zeigt den Empty State an. */}
-            <InformationCard
-              // Diese Zeile setzt den Titel der Karte.
-              title="No detections"
-              // Diese Zeile setzt die Beschreibung der Karte.
-              description="No traffic signs detected in the selected image."
-            />
+            {/* Diese Zeile rendert den leeren Zustand. */}
+            <View style={styles.emptyStateContainer}>
+              {/* Diese Zeile zeigt den exakt geforderten leeren Zustandstext an. */}
+              <Text style={styles.emptyStateText}>No traffic sign detected.</Text>
+            </View>
           </>
         ) : (
           <>
-            {/* Diese Zeile zeigt den Abschnittstitel an. */}
-            <Text style={styles.sectionTitle}>Detected objects</Text>
+            {/* Diese Zeile zeigt den Abschnittstitel für die Erkennungen an. */}
+            <Text style={styles.sectionTitle}>Detected traffic signs</Text>
 
-            {/* Diese Zeile rendert für jede Erkennung eine Karte. */}
+            {/* Diese Zeile rendert für jede Erkennung eine Ergebnis-Karte. */}
             {detections.map((trafficSignDetection) => (
-              <InformationCard
-                // Diese Zeile setzt den eindeutigen Schlüssel der Karte.
+              <DetectionResultCard
+                // Diese Zeile setzt den eindeutigen Schlüssel.
                 key={trafficSignDetection.id}
-                // Diese Zeile setzt den Titel der Karte.
-                title={`${trafficSignDetection.label} (${Math.round(trafficSignDetection.confidence * 100)}%)`}
-                // Diese Zeile setzt die Beschreibung der Karte.
-                description={`Bounding box: ${Math.round(trafficSignDetection.boundingBox.xMin)}, ${Math.round(trafficSignDetection.boundingBox.yMin)}, ${Math.round(trafficSignDetection.boundingBox.xMax)}, ${Math.round(trafficSignDetection.boundingBox.yMax)}`}
+                // Diese Zeile übergibt das Label.
+                label={trafficSignDetection.label}
+                // Diese Zeile übergibt die Wahrscheinlichkeit.
+                confidence={trafficSignDetection.confidence}
+                // Diese Zeile übergibt die lokale Bedeutung.
+                meaning={readTrafficSignMeaning(trafficSignDetection.label)}
               />
             ))}
           </>
@@ -135,6 +146,7 @@ const styles = StyleSheet.create({
   safeArea: {
     // Diese Zeile setzt die Haupt-Hintergrundfarbe.
     backgroundColor: colorPalette.backgroundPrimary,
+
     // Diese Zeile lässt die Fläche den ganzen Bildschirm füllen.
     flex: 1
   },
@@ -143,8 +155,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     // Diese Zeile erzeugt oberen Abstand.
     paddingTop: layoutValues.large,
+
     // Diese Zeile erzeugt horizontalen Abstand.
     paddingHorizontal: layoutValues.large,
+
     // Diese Zeile erzeugt unteren Abstand.
     paddingBottom: layoutValues.extraLarge
   },
@@ -153,14 +167,19 @@ const styles = StyleSheet.create({
   headerSection: {
     // Diese Zeile setzt die Hintergrundfarbe des Bereichs.
     backgroundColor: colorPalette.surfacePrimary,
+
     // Diese Zeile erzeugt Innenabstand.
     padding: layoutValues.large,
+
     // Diese Zeile rundet die Ecken weich ab.
     borderRadius: layoutValues.cardRadius,
+
     // Diese Zeile erzeugt Abstand nach unten.
     marginBottom: layoutValues.large,
+
     // Diese Zeile zeichnet einen feinen Rand.
     borderWidth: 1,
+
     // Diese Zeile setzt die Randfarbe.
     borderColor: colorPalette.borderPrimary
   },
@@ -169,10 +188,13 @@ const styles = StyleSheet.create({
   screenTitle: {
     // Diese Zeile setzt eine große Schriftgröße.
     fontSize: 28,
+
     // Diese Zeile macht die Überschrift deutlich fett.
     fontWeight: '700',
+
     // Diese Zeile setzt die Haupttextfarbe.
     color: colorPalette.textPrimary,
+
     // Diese Zeile erzeugt Abstand nach unten.
     marginBottom: layoutValues.small
   },
@@ -181,8 +203,10 @@ const styles = StyleSheet.create({
   screenDescription: {
     // Diese Zeile setzt die Schriftgröße der Beschreibung.
     fontSize: 16,
+
     // Diese Zeile setzt die weichere Textfarbe.
     color: colorPalette.textSecondary,
+
     // Diese Zeile erhöht die Lesbarkeit durch mehr Zeilenhöhe.
     lineHeight: 24
   },
@@ -191,39 +215,125 @@ const styles = StyleSheet.create({
   imagePreviewContainer: {
     // Diese Zeile setzt die Hintergrundfarbe des Vorschaubereichs.
     backgroundColor: colorPalette.surfacePrimary,
-    // Diese Zeile erzeugt Innenabstand.
-    padding: layoutValues.medium,
+
     // Diese Zeile rundet die Ecken weich ab.
     borderRadius: layoutValues.cardRadius,
+
     // Diese Zeile erzeugt Abstand nach unten.
     marginBottom: layoutValues.large,
+
     // Diese Zeile zeichnet einen feinen Rand.
     borderWidth: 1,
+
     // Diese Zeile setzt die Randfarbe.
     borderColor: colorPalette.borderPrimary,
-    // Diese Zeile legt eine feste Höhe für die Vorschau fest.
-    height: 260
+
+    // Diese Zeile legt eine größere feste Höhe fest.
+    height: 420,
+
+    // Diese Zeile schneidet Inhalte außerhalb des Bereichs ab.
+    overflow: 'hidden'
   },
 
-  // Diese Regel gestaltet das Bild in der Vorschau.
-  imagePreview: {
-    // Diese Zeile setzt die Breite auf die volle Containerbreite.
-    width: '100%',
-    // Diese Zeile setzt die Höhe auf die volle Containerhöhe.
-    height: '100%'
+  // Diese Regel gestaltet die Metadaten-Karte.
+  imageMetaCard: {
+    // Diese Zeile setzt die Hintergrundfarbe der Karte.
+    backgroundColor: colorPalette.surfacePrimary,
+
+    // Diese Zeile erzeugt Innenabstand.
+    padding: layoutValues.large,
+
+    // Diese Zeile rundet die Ecken weich ab.
+    borderRadius: layoutValues.cardRadius,
+
+    // Diese Zeile erzeugt Abstand nach unten.
+    marginBottom: layoutValues.large,
+
+    // Diese Zeile zeichnet einen feinen Rand.
+    borderWidth: 1,
+
+    // Diese Zeile setzt die Randfarbe.
+    borderColor: colorPalette.borderPrimary
   },
 
-  // Diese Regel gestaltet einen Abschnittstitel.
+  // Diese Regel gestaltet den Titel der Metadaten-Karte.
+  imageMetaTitle: {
+    // Diese Zeile setzt die Schriftgröße.
+    fontSize: 16,
+
+    // Diese Zeile macht den Titel fett.
+    fontWeight: '700',
+
+    // Diese Zeile setzt die Haupttextfarbe.
+    color: colorPalette.textPrimary,
+
+    // Diese Zeile erzeugt Abstand nach unten.
+    marginBottom: layoutValues.small
+  },
+
+  // Diese Regel gestaltet den Wert der Metadaten-Karte.
+  imageMetaValue: {
+    // Diese Zeile setzt die Schriftgröße.
+    fontSize: 15,
+
+    // Diese Zeile setzt die weichere Textfarbe.
+    color: colorPalette.textSecondary
+  },
+
+  // Diese Regel gestaltet den Abschnittstitel.
   sectionTitle: {
     // Diese Zeile setzt die Schriftgröße.
     fontSize: 20,
+
     // Diese Zeile macht den Text fett.
     fontWeight: '700',
+
     // Diese Zeile setzt die Haupttextfarbe.
     color: colorPalette.textPrimary,
+
     // Diese Zeile erzeugt Abstand oberhalb.
     marginTop: layoutValues.medium,
+
     // Diese Zeile erzeugt Abstand unterhalb.
     marginBottom: layoutValues.medium
+  },
+
+  // Diese Regel gestaltet den leeren Zustand.
+  emptyStateContainer: {
+    // Diese Zeile setzt die Hintergrundfarbe.
+    backgroundColor: colorPalette.surfacePrimary,
+
+    // Diese Zeile erzeugt Innenabstand.
+    padding: layoutValues.large,
+
+    // Diese Zeile rundet die Ecken weich ab.
+    borderRadius: layoutValues.cardRadius,
+
+    // Diese Zeile erzeugt Abstand nach unten.
+    marginBottom: layoutValues.large,
+
+    // Diese Zeile zeichnet einen feinen Rand.
+    borderWidth: 1,
+
+    // Diese Zeile setzt die Randfarbe.
+    borderColor: colorPalette.borderPrimary,
+
+    // Diese Zeile richtet den Inhalt mittig aus.
+    alignItems: 'center'
+  },
+
+  // Diese Regel gestaltet den leeren Zustandstext.
+  emptyStateText: {
+    // Diese Zeile setzt die Schriftgröße.
+    fontSize: 18,
+
+    // Diese Zeile macht den Text gut lesbar.
+    fontWeight: '600',
+
+    // Diese Zeile setzt die Haupttextfarbe.
+    color: colorPalette.textPrimary,
+
+    // Diese Zeile richtet den Text mittig aus.
+    textAlign: 'center'
   }
 });

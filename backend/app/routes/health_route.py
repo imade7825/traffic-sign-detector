@@ -8,3 +8,4 @@ health_router = APIRouter(tags=["health"])
 def read_health_status() -> HealthResponse:
     return create_health_response()
 
+     

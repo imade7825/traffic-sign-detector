@@ -68,7 +68,13 @@ def analyze_image_file(image_path: str) -> DetectionResponse:
         return create_empty_detection_response(source_image_width, source_image_height)
 
     # Diese Zeile führt die Inferenz auf dem Bild aus.
-    inference_results = detection_model(image_path, verbose=False)
+    inference_results = detection_model.predict(
+    source=image_path,
+    conf=0.5,
+    iou=0.2,
+    max_det=4,
+    verbose=False
+)
 
     # Diese Zeile liest das erste Ergebnisobjekt aus.
     first_result = inference_results[0]
